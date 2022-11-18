@@ -6,11 +6,16 @@ output: html_notebook
 
 ### Loading the dataset
 ```{r}
+library(e1071)
+library(caret)
+```
+
+```{r}
 data<- read.csv("spam.csv", stringsAsFactors = FALSE)
 
 #Transfer values in "Category" into number for convenience of following processing
 #In this case, "1" represent "ham" and "2" represent "spam"
-#data$Category <- as.numeric(as.factor(data$Category))
+data$Category <- as.numeric(as.factor(data$Category))
 #data$Category <- as.factor(data$Category)
 ```
 
@@ -59,19 +64,44 @@ dataSparse = as.data.frame(as.matrix(spdtm))
 colnames(dataSparse) = make.names(colnames(dataSparse))
 ```
 
+
 ```{r}
 sort(colSums(dataSparse))
 ```
 
+## Occurs most frequently terms in Ham messages
 ```{r}
 dataSparse$Category = data$Category
+sort(colSums(subset(dataSparse, Category == 1)))
+```
+## Occurs most frequently terms in Spam messages
+```{r}
 sort(colSums(subset(dataSparse, Category == 2)))
 ```
 
+## Building the histogram based on term frequency in the whole dataset
 ```{r}
-sort(colSums(subset(dataSparse, Category == 1)))
+freq<- sort(colSums(as.matrix(dtm)), decreasing=TRUE)
+wf<- data.frame(word=names(freq), freq=freq)
+head(wf)
 ```
 
+```{r}
+pp <- ggplot(subset(wf, freq>100), aes(x=reorder(word, -freq), y =freq)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+pp
+```
+
+## ## Building the wordcloud based on term frequency in the whole dataset
+```{r}
+library("wordcloud")
+library("RColorBrewer")
+set.seed(1234)
+wordcloud(words = wf$word, freq = wf$freq, min.freq = 1,
+          max.words=100, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
 ### Build machine learning models.
 ```{r}
 dataSparse$Category = as.factor(dataSparse$Category)
@@ -80,6 +110,7 @@ set.seed(123)
 spl = sample.split(dataSparse$Category, 0.7)
 train = subset(dataSparse, spl == TRUE)
 test = subset(dataSparse, spl == FALSE)
+#Setting the training and testing data groups
 ```
 
 ### Build a logistic regression model
@@ -110,10 +141,7 @@ spamRF = randomForest(Category~., data=train)
 ```
 
 ### BUild a Naive Bayes model
-```{r}
-library(e1071)
-library(caret)
-```
+
 
 ```{r}
 control <- trainControl(method="repeatedcv", number=10, repeats=3)
@@ -221,6 +249,7 @@ confusionMatrix(log_pred,test$Category)
 ### Evaluate the performance of the CART model on testing set
 ### Somehow can't use Confusion Matrix for the CART model
 ```{r}
+predTestCART = predict(spamCART, newdata=test)[,2]
 table(test$Category, predTestCART > 0.5)
 ```
 
@@ -244,7 +273,7 @@ confusionMatrix(table(rf_pred,test$Category))
 
 ### Confusion Matrix and Statistics of Naive Bayes model
 ```{r}
-nb_pred = predict(SpamNB, type = 'class', newdata = test)
+nb_pred = predict(spamNB, type = 'class', newdata = test)
 
 ```
 
