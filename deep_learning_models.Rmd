@@ -1,5 +1,5 @@
 ---
-title: "INFO 659 Final Project deep learning code Updated 11/17/2022"
+title: "INFO 659 Final Project deep learning"
 author: "Rishabh Sharma"
 output:
   html_document:
@@ -15,7 +15,6 @@ library(caret)
 
 ```{r}
 data<- spam
-
 #Transfer values in "Category" into number for convenience of following processing
 #In this case, "1" represent "ham" and "2" represent "spam"
 data$Category <- as.numeric(as.factor(data$Category))
@@ -103,6 +102,8 @@ test = subset(dataSparse, spl == FALSE)
 library(neuralnet)
 ```
 
+### creating a neural network with 10 neurons in the first layer and 5 neurons in the second layer. Since it is a classification model we will need two neruons in our output layers
+
 ```{r}
 model = neuralnet(Category ~ ., data = train, hidden = c(10, 5), linear.output = FALSE)
 ```
@@ -110,11 +111,12 @@ model = neuralnet(Category ~ ., data = train, hidden = c(10, 5), linear.output =
 ```{r}
 plot(model)
 ```
-
+### training the model on the training data set
 ```{r}
 predict = compute(model, train)
 ```
 
+### saving the results in probabilities
 ```{r}
 probabilities = predict$net.result
 ```
@@ -124,13 +126,14 @@ pred = ifelse(probabilities > 0.5, 1, 2)
 pred <- data.frame(pred)
 ```
 
+### confusion matrix for training data
 ```{r}
 length(pred$X1)
 length(train$Category)
 table(pred$X1, train$Category)
 ```
 
-### Accuracy
+### Accuracy for the training dataset
 ```{r}
 mean(pred$X1 == train$Category)
 ```
@@ -144,10 +147,11 @@ plot(perf, colorize = TRUE)
 ```
 
 `
-
+### testing the model on testing dataset
 ```{r}
 predict = compute(model, test)
 ```
+
 
 ```{r}
 probabilities = predict$net.result
