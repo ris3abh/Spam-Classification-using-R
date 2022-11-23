@@ -180,10 +180,6 @@ pred = prediction(pred$X1, test$Category)
 perf = performance(pred, "tpr", "fpr")
 plot(perf, colorize = TRUE)
 ```
-### AUC Curve
 
-```{r}
-auc = performance(pred, measure = "auc")
-```
 
 
