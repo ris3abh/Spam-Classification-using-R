@@ -1,0 +1,184 @@
+---
+title: "INFO 659 Final Project deep learning code Updated 11/17/2022"
+author: "Rishabh Sharma"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+### Loading the dataset
+```{r}
+library(e1071)
+library(caret)
+```
+
+```{r}
+data<- spam
+
+#Transfer values in "Category" into number for convenience of following processing
+#In this case, "1" represent "ham" and "2" represent "spam"
+data$Category <- as.numeric(as.factor(data$Category))
+#data$Category <- as.factor(data$Category)
+```
+
+```{r}
+View(data)
+```
+
+### CHecking the dataset
+```{r}
+str(data)
+```
+### confusion matrix of messages whether spam or not
+```{r}
+table(data$Category)
+```
+### load text mining package
+```{r}
+library(tm)
+```
+
+```{r}
+#Build a new corpus variable called corpus
+corpus = VCorpus(VectorSource(data$Message))
+# convert the text to lowercase
+corpus = tm_map(corpus, content_transformer(tolower))
+corpus = tm_map(corpus, PlainTextDocument)
+# remove all punctuation from the corpus
+corpus = tm_map(corpus, removePunctuation)
+# remove all English stopwords from the corpus
+corpus = tm_map(corpus, removeWords, stopwords("en"))
+# stem the words in the corpus
+corpus = tm_map(corpus, stemDocument)
+```
+
+### Build a document term matrix from the corpus
+```{r}
+dtm = DocumentTermMatrix(corpus)
+dtm
+```
+### Remove sparse terms (that don't appear very often)
+```{r}
+spdtm = removeSparseTerms(dtm, 0.99)
+spdtm
+```
+### Convert spdtm to a data frame and make variable names of dataSparse valid i.e. R-friendly
+
+### This part list the term appearance number in the whole dataset, and in spam and ham groups
+```{r}
+dataSparse = as.data.frame(as.matrix(spdtm))
+colnames(dataSparse) = make.names(colnames(dataSparse))
+```
+
+
+```{r}
+sort(colSums(dataSparse))
+```
+
+## Occurs most frequently terms in Ham messages
+```{r}
+dataSparse$Category = data$Category
+sort(colSums(subset(dataSparse, Category == 1)))
+```
+## Occurs most frequently terms in Spam messages
+```{r}
+sort(colSums(subset(dataSparse, Category == 2)))
+```
+
+### Split the data into training and test sets
+```{r}
+dataSparse$Category = as.factor(dataSparse$Category)
+library(caTools)
+set.seed(123)
+spl = sample.split(dataSparse$Category, 0.7)
+train = subset(dataSparse, spl == TRUE)
+test = subset(dataSparse, spl == FALSE)
+#Setting the training and testing data groups
+```
+
+
+### Build a deep learning model
+```{r}
+library(neuralnet)
+```
+
+```{r}
+model = neuralnet(Category ~ ., data = train, hidden = c(10, 5), linear.output = FALSE)
+```
+
+```{r}
+plot(model)
+```
+
+```{r}
+predict = compute(model, train)
+```
+
+```{r}
+probabilities = predict$net.result
+```
+
+```{r}
+pred = ifelse(probabilities > 0.5, 1, 2)
+pred <- data.frame(pred)
+```
+
+```{r}
+length(pred$X1)
+length(train$Category)
+table(pred$X1, train$Category)
+```
+
+### Accuracy
+```{r}
+mean(pred$X1 == train$Category)
+```
+
+### ROC curve
+```{r}
+library(ROCR)
+pred = prediction(pred$X1, train$Category)
+perf = performance(pred, "tpr", "fpr")
+plot(perf, colorize = TRUE)
+```
+
+`
+
+```{r}
+predict = compute(model, test)
+```
+
+```{r}
+probabilities = predict$net.result
+```
+
+```{r}
+pred = ifelse(probabilities > 0.5, 1, 2)
+pred <- data.frame(pred)
+```
+
+```{r}
+length(pred$X1)
+length(test$Category)
+table(pred$X1, test$Category)
+```
+
+### Accuracy
+```{r}
+mean(pred$X1 == test$Category)
+```
+
+### ROC curve
+```{r}
+pred = prediction(pred$X1, test$Category)
+perf = performance(pred, "tpr", "fpr")
+plot(perf, colorize = TRUE)
+```
+### AUC Curve
+
+```{r}
+auc = performance(pred, measure = "auc")
+```
+
+
