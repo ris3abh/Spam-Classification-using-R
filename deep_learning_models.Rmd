@@ -162,13 +162,14 @@ pred = ifelse(probabilities > 0.5, 1, 2)
 pred <- data.frame(pred)
 ```
 
+### confusion matrix for the testing data
 ```{r}
 length(pred$X1)
 length(test$Category)
 table(pred$X1, test$Category)
 ```
 
-### Accuracy
+### Accuracy for the test dataset
 ```{r}
 mean(pred$X1 == test$Category)
 ```
